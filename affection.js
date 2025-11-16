@@ -16,9 +16,9 @@ $( document ).ready(function() {
 function initAffectionTable(){
 	$(".character-affectiontable").each(function(){
 		var id = ++affectionTableCounter;
-        if ($(this).parent().attr('data-character_id') !== undefined) id = $(this).parent().attr('data-character_id');
+        if ($(this).parent().attr('data-character-id') !== undefined) id = $(this).parent().attr('data-character-id');
 		$(this).attr('id', 'affectionTable-'+id);
-		$(this).attr('data-character_id', id);
+		$(this).attr('data-character-id', id);
 		
 		//console.log('Initializing affection table '+id)
 		var data = {};
@@ -56,7 +56,7 @@ function affectionChange (affectionTable, level, call_statCalc){
 
 	
 	for (var index = 2; index <= level; index++) {
-		$.each( affection_data[affectionTable.attr('data-character_id')][index], function(stat_name, stat_value){
+		$.each( affection_data[affectionTable.attr('data-character-id')][index], function(stat_name, stat_value){
 			if (typeof effective_bonus[stat_name] == 'undefined') effective_bonus[stat_name] = 0;
 			effective_bonus[stat_name] += stat_value;
 		});
@@ -66,8 +66,8 @@ function affectionChange (affectionTable, level, call_statCalc){
 		html_out += '<b>' + stat_name + '</b>' + ' +' + stat_value + ', ';
 	});
 
-	affection_data[affectionTable.attr('data-character_id')].current = effective_bonus;
-	affection_data[affectionTable.attr('data-character_id')].level = level;
+	affection_data[affectionTable.attr('data-character-id')].current = effective_bonus;
+	affection_data[affectionTable.attr('data-character-id')].level = level;
 
 	if (affectionTable.find(".affection-level input").val() !== level) affectionTable.find(".affection-level input").val(level);
 	affectionTable.find(".affection-total").html(html_out.substring(0,html_out.length-2));
@@ -77,7 +77,7 @@ function affectionChange (affectionTable, level, call_statCalc){
 	if (call_statCalc && typeof statCalc !== 'undefined') {
 
 		var type = 'main';
-		if (affectionTable.attr('data-character_id') > 1) type = 'alt';
+		if (affectionTable.attr('data-character-id') > 1) type = 'alt';
 		
 		if (type == 'main') {
 			Object.keys(statCalc).forEach(function (id){
@@ -86,7 +86,7 @@ function affectionChange (affectionTable, level, call_statCalc){
 		}
 		else {
 			Object.keys(statCalc).forEach(function (id){
-				statCalc[id].affection.alt_level[statCalc[id].affection.alt_id.indexOf(affectionTable.attr('data-character_id'))] = level;
+				statCalc[id].affection.alt_level[statCalc[id].affection.alt_id.indexOf(affectionTable.attr('data-character-id'))] = level;
 			});
 		}
 

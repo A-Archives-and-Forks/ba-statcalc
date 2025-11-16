@@ -220,7 +220,7 @@ function initStatChart(){
 
 	$(".statchart tr.stattable-stats").each(function(){
 		var id = 'statTable-'+(++tableCounter);
-		if ($(this).attr('data-character_id') !== undefined) id = $(this).attr('data-character_id');
+		if ($(this).attr('data-character-id') !== undefined) id = $(this).attr('data-character-id');
 		$(this).attr('id',id);
 		//console.log('StatCalc - init table id ' + id);
 
@@ -259,7 +259,7 @@ function initStatChart(){
 function initStatCalc(){
 	$(".character-stattable").each(function(){
 		var id = 'statTable-'+(++tableCounter);
-		if ($(this).attr('data-character_id') !== undefined) id = String($(this).attr('data-character_id'));
+		if ($(this).attr('data-character-id') !== undefined) id = String($(this).attr('data-character-id'));
 		$(this).attr('id',id);
 		//console.log('StatCalc - init table id ' + id);
 
@@ -344,8 +344,8 @@ function initStats(scope, statTable, id){
 
 	statCalc[id] = {};
 
-	if (typeof statTable.attr('data-character_name')) {
-		statCalc[id].character_name = statTable.attr('data-character_name');
+	if (typeof statTable.attr('data-character-name')) {
+		statCalc[id].character_name = statTable.attr('data-character-name');
 	}
 
 	var attack_data = statTable.find(".stat-attack").html().split('/');
@@ -851,7 +851,7 @@ function rank(stat_name) {
 
 
 function affectionChartUpdate (element){
-	type = element.attr('data-affection_type');
+	type = element.attr('data-affection-type');
 	input = element.find('input');
 	level = input.val();
 	//console.log('Changing '+type+' affection level to '+level);
@@ -864,6 +864,9 @@ function affectionChartUpdate (element){
 	// Object.keys(statCalc).forEach(function (id){
 	// 	statCalc[id].affection[type+'_level'] = level;
 	// });
+
+	//Flip element to active state on level change
+	if (element.hasClass("inactive")) element.addClass('active').removeClass('inactive');
 
 	if (type == 'main') {
 		Object.keys(statCalc).forEach(function (id){
@@ -881,7 +884,7 @@ function affectionChartUpdate (element){
 
 
 function affectionChartToggle (element){
-	type = element.attr('data-affection_type');
+	type = element.attr('data-affection-type');
 	input = element.find('input');
 	//console.log('Toggling  '+type+' affection');
 
