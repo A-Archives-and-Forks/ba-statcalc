@@ -1,0 +1,143 @@
+.eventtable-scroll {
+    overflow-x: auto;
+}
+
+#eventtable {
+    width: 100%;
+    margin-top: 0.5em;
+}
+
+#eventtable td {
+    vertical-align: middle;
+}
+
+#eventtable tr.hidden,
+#eventtable:not(.filter-ready) tr[data-release="rerun"],
+#eventtable:not(.filter-ready) tr[data-release="permanent"] {
+    display: none;
+}
+
+#eventtable .event-promo {
+    width: 160px;
+    text-align: center;
+    padding: 0.2em 0.2em;
+}
+
+#eventtable .event-promo img {
+    display: block;
+    max-width: 160px;
+    height: auto;
+    border-radius: 3px;
+}
+
+#eventtable .event-promo-image {
+    position: relative;
+    display: inline-block;
+    vertical-align: middle;
+    line-height: 0;
+}
+
+#eventtable .event-promo-missing {
+    width: 160px;
+    min-height: 70px;
+    padding-top: 12px;
+    box-sizing: border-box;
+    line-height: 1.4;
+}
+
+#eventtable .event-names {
+    min-width: 240px;
+}
+
+#eventtable .event-name {
+    display: flex;
+    align-items: center;
+    column-gap: 0.35em;
+}
+
+#eventtable .event-titles {
+    flex: 1;
+    min-width: 0;
+}
+
+#eventtable .event-name + .event-name {
+    margin-top: 0.4em;
+}
+
+#eventtable .event-region-label,
+#eventtable .event-name-original,
+#eventtable .event-period-note,
+#eventtable .event-notes {
+    font-size: 0.85em;
+}
+
+#eventtable .event-region-label {
+    flex: 0 0 1.5em;
+    font-weight: bold;
+}
+
+#eventtable .event-title + .event-title::before {
+    content: " / ";
+}
+
+#eventtable .event-period {
+    min-width: 120px;
+    text-align: center;
+}
+
+#eventtable .datetime {
+    white-space: nowrap;
+}
+
+#eventtable .event-period-entry + .event-period-entry {
+    margin-top: 0.7em;
+}
+
+#eventtable .event-period-entry > .event-period-note {
+    font-stretch: condensed;
+}
+
+#eventtable[data-primary-region="jp"] .event-region-gl,
+#eventtable[data-primary-region="gl"] .event-region-jp {
+    opacity: 0.55;
+}
+
+#eventtable[data-primary-region="gl"] .event-upcoming-gl .event-region-jp {
+    opacity: 1;
+}
+
+#eventtable .event-unannounced,
+#eventtable .event-no-preview {
+    color: var(--color-subtle, #72777d);
+    font-style: italic;
+}
+
+#eventtable .event-tag {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 11px;
+    padding: 0 0.4em;
+    border-radius: 0 0 3px 3px;
+    font-size: 10px;
+    font-weight: normal;
+    line-height: 11px;
+    color: #fff;
+    background-color: rgba(162, 169, 177, 0.85);
+    pointer-events: none;
+}
+
+@media (max-width: 720px) {
+    #eventtable .event-promo {
+        width: 100px;
+    }
+
+    #eventtable .event-promo img {
+        max-width: 100px;
+    }
+
+    #eventtable .event-promo-missing {
+        width: 100px;
+    }
+}

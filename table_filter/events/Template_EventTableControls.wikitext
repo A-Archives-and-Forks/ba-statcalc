@@ -1,0 +1,15 @@
+<templatestyles src="CharacterTableControls/style.css" />
+<includeonly><div id="table-filter" class="table-controls eventtable-controls" data-target="eventtable" data-search-cell-index="1"><!--
+--><div class="controls controls-search"><div class="input-placeholder"></div></div><!--
+--><div class="event-primary-control"><span class="event-control-label">Primary region</span><!--
+--><div class="controls textbuttons controls-primary" role="radiogroup" aria-label="Primary event region"><!--
+--><span class="active" data-primary="jp" role="radio" aria-checked="true" tabindex="0">JP</span><!--
+--><span class="inactive" data-primary="gl" role="radio" aria-checked="false" tabindex="-1">GL</span><!--
+--></div></div><!--
+--><div class="controls textbuttons controls-release" role="group" aria-label="Event releases"><!--
+--><span class="release-new active" data-toggle="release-new" role="button" aria-pressed="true" tabindex="0">New</span><!--
+--><span class="release-rerun inactive" data-toggle="release-rerun" role="button" aria-pressed="false" tabindex="0">Rerun</span><!--
+--><span class="release-permanent inactive" data-toggle="release-permanent" role="button" aria-pressed="false" tabindex="0">Permanent</span><!--
+--></div></div></includeonly><noinclude>
+Controls for the combined [[Events#Events Schedule|Events schedule]]. New events and JP as the primary region are selected by default. Selecting no release types shows all types, as in the banner filter. JP-only events remain visible when GL is primary, ordered by their JP schedule above announced GL events.
+</noinclude>

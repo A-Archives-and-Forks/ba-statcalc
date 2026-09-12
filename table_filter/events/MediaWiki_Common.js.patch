@@ -1,0 +1,9 @@
+--- a/MediaWiki:Common.js
++++ b/MediaWiki:Common.js
+@@ -53,5 +53,5 @@
+ 	        initBannerTable();
+ 	    }
+-	    if (mw.config.get("wgPageName") === "Characters" || mw.config.get("wgPageName") === "Characters_StatChart" || mw.config.get("wgPageName") === "Banner_List" || mw.config.get("wgPageName") === "Banner_List_(Global)" || mw.config.get("wgPageName") === "Affection") {
++	    if (mw.config.get("wgPageName") === "Characters" || mw.config.get("wgPageName") === "Characters_StatChart" || mw.config.get("wgPageName") === "Banner_List" || mw.config.get("wgPageName") === "Banner_List_(Global)" || mw.config.get("wgPageName") === "Affection" || mw.config.get("wgPageName") === "Events") {
+ 			mw.loader.load( '/wiki/MediaWiki:TableFilter.js?action=raw&ctype=text/javascript' );
+ 	    }

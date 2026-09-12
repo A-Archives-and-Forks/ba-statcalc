@@ -1,8 +1,8 @@
 .table-controls {
     user-select: none;
     box-sizing: border-box;
-    background-color: #f8f9fa;
-    border: 1px solid #a2a9b1;
+    background-color: var(--background-table, #f8f9fa);
+    border: 1px solid var(--table-border, #a2a9b1);
     padding: 0.5em 0.4em;
     display: flex;
     flex-direction: row;
@@ -11,6 +11,7 @@
     flex-wrap: wrap;
     gap: 12px 14px;
     line-height: normal;
+    color: var(--table-content);
 }
 
 .table-controls div.controls > span {
@@ -23,6 +24,11 @@
     border-radius: 2px;
     cursor: pointer;
     position: relative;
+}
+
+.table-controls div.controls > span:focus {
+	outline: 2px solid var(--border-color-progressive--focus, #36c);
+    outline-offset: 2px;
 }
 
 .table-controls .inactive {
@@ -52,10 +58,10 @@
     transform: skewX(-10deg);
 }
 
-.table-controls div.controls-class > span.class-striker {
+.table-controls div.controls-class > .class-striker {
     border-color: #f54d29;
 }
-.table-controls div.controls-class > span.class-special {
+.table-controls div.controls-class > .class-special {
     border-color: #0785fb;
 }
 
@@ -64,7 +70,7 @@
 }
 
 .table-controls div.controls-school > span {
-    margin: 0 1!important;
+    margin: 0 1px!important;
 }
 
 .table-controls div.controls-attack > span,
@@ -79,7 +85,7 @@
     opacity: 0.8;
 }
 
-.table-controls div.controls.textbuttons > span,
+.table-controls .controls.textbuttons > span,
 .table-controls div.controls-pool > span {
     width: auto;
     height: 26px;
@@ -105,7 +111,7 @@
     width: 82px;
 } */
 
-.table-controls div.controls-school span.school-abydos > img {
+.table-controls div.controls-school .school-abydos > img {
     object-position: 0 3px;
 }
 
@@ -117,16 +123,40 @@
 .table-controls div.controls-search input,
 .table-controls div.controls-search .input-placeholder {
     height: 34px;
-    width: 100%!important;
+    width: 100%;
     min-width: 240px;
     box-sizing: border-box;
-    padding-left: 0.4em;
-    padding-right: 0.4em;
-    background-color: #fff;
-    border: 1px solid #a2a9b1;
+    padding-inline: 0.4em;
+    background-color: var(--background-color-base,#fff);
+    border: 1px solid var(--border-color-base,#a2a9b1);
     border-radius: 2px;
+
+    font-size: inherit;
+    font-family: inherit;
 }
 
+
+/* Radio group styling */
+.table-controls .controls[role="radiogroup"] > span {
+    margin: 0;
+    border-radius: 0;
+}
+
+.table-controls .controls[role="radiogroup"] > span + span {
+    border-left-width: 0;
+}
+
+.table-controls .controls[role="radiogroup"] > span:first-child {
+    border-radius: 8px 0 0 8px;
+}
+
+.table-controls .controls[role="radiogroup"] > span:last-child {
+    border-radius: 0 8px 8px 0;
+}
+
+.table-controls .controls[role="radiogroup"] > span:focus {
+    z-index: 1;
+}
 
 
 
@@ -140,57 +170,35 @@
 
 @media (max-width: 480px) {
     .table-controls div.controls-school > span {
-        margin: 0 -2!important;
+        margin: 0 -2px !important;
     }
 }
 
 
 
-
-
-/* .charactertable-controls div.controls-attack,
-.charactertable-controls div.controls-armor {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    border: 1px solid;
-    border-radius: inherit;
+/* Event Table controls */
+.eventtable-controls .event-primary-control {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
 }
 
-
-.charactertable-controls div.controls-attack span.attack-explosive:before {
-    border: var(--explosive);
-}
-.charactertable-controls div.controls-attack span.attack-penetration:before {
-    border: var(--penetration);
-}
-.charactertable-controls div.controls-attack span.attack-mystic:before {
-    border: var(--mystic);
-}
-.charactertable-controls div.controls-attack span.attack-sonic:before {
-    border: var(--sonic);
+.eventtable-controls .event-control-label {
+    font-size: 0.9em;
 }
 
-
-.charactertable-controls div.controls-armor span.armor-light:before {
-    border: var(--light);
+.eventtable-controls .controls-release {
+    display: flex;
+    gap: 2px;
 }
-.charactertable-controls div.controls-armor span.armor-heavy:before {
-    border: var(--heavy);
+
+.eventtable-controls .controls.textbuttons > span {
+    color: var(--table-content, #202122);
+    background-color: var(--background-color-interactive-subtle, #ecf5f9);
+    border-color: var(--table-border, #112134);
 }
-.charactertable-controls div.controls-armor span.armor-special:before {
-    border: var(--special);
+
+.table-controls .controls[role="radiogroup"] {
+    display: flex;
+    gap: 0;
 }
-.charactertable-controls div.controls-armor span.armor-elastic:before {
-    border: var(--elastic);
-} */
-
-
-/* 
-tr.pool-regular.global-line.line-bottom {
-    position: relative;
-} */
-

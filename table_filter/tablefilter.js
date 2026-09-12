@@ -7,6 +7,7 @@ let lastSearchSegments = [];
 const initSortList = {
     'charactertable': [{14: "desc"}, {2: "desc"}, {1: "asc"}],
     'bannertable': [{2: "desc"}, {0: "asc"}],
+    'eventtable': [{2: "desc"}, {1: "asc"}],
     'gifttable': [],
 }
 
@@ -104,16 +105,154 @@ const search_keywords = {
         'sexy': { text: '"seia"' },
         'wappi': { text: '"sakurako"' },
     },
+    'eventtable': {},
     'gifttable': {},
     
 };
 
 
 $(document).ready(function() {
+    if ($("#table-filter").data('target') === 'eventtable') {
+        initEventTableFilters();
+        return;
+    }
     initTableFilters();
     updateFiltersUI();
     lastSearchSegments = $("#table-search").val().toLowerCase().split(/[\s_,;+\-]+/).filter(seg => seg.length >= 2);
 });
+
+// Events pair both regions in each row. Region toggle changes css presentation and sorting, so prevent it acting as a row-membership filter.
+function initEventTableFilters() {
+    const $filter = $("#table-filter");
+    const $table = $("#eventtable");
+    if (!$table.length) return;
+
+    const $rows = $table.find('tbody > tr[data-event-id]');
+    const $regions = $filter.find('[data-primary]');
+    const $releases = $filter.find('[data-toggle^="release-"]');
+    const releases = ['new', 'rerun', 'permanent'];
+    const hashPrefix = '#eventtable:';
+    let state;
+    let sorterReady = false;
+
+    const $search = $('<input>', {
+        type: 'search', id: 'table-search', placeholder: 'Filter event names…',
+        'aria-label': 'Filter event names in English or Japanese', autocomplete: 'off'
+    });
+    $filter.find('.controls-search').empty().append($search);
+
+    function readState() {
+        state = { primary: 'jp', releases: new Set(['new']), query: '' };
+        if (!window.location.hash.startsWith(hashPrefix)) return;
+        const params = new URLSearchParams(window.location.hash.slice(hashPrefix.length));
+        if (params.get('primary') === 'gl') state.primary = 'gl';
+        if (params.has('release')) {
+            const values = params.get('release').split(',');
+            if (values.includes('all')) state.releases.clear();
+            else if (values.some(value => releases.includes(value))) {
+                state.releases = new Set(values.filter(value => releases.includes(value)));
+            }
+        }
+        state.query = params.get('q') || '';
+    }
+
+    function writeState() {
+        const params = new URLSearchParams({
+            primary: state.primary,
+            release: releases.filter(value => state.releases.has(value)).join(',') || 'all'
+        });
+        if (state.query) params.set('q', state.query);
+        // Keep typing from adding history entries or moving the page to an anchor.
+        window.history.replaceState(null, '', hashPrefix + params.toString());
+    }
+
+    function sortByRegion() {
+        if (!sorterReady) return;
+        const sorter = $table.data('tablesorter');
+        const sortList = state.primary === 'gl' ? [{3: 'desc'}, {1: 'asc'}] : initSortList.eventtable;
+        // MediaWiki's sort() accepts its existing internal list. Set that list
+        // too, so subsequent header clicks and sortEnd handlers see this order.
+        sorter.config.sortList = sortList.map(sort => {
+            const [column, direction] = Object.entries(sort)[0];
+            return [Number(column), direction === 'desc' ? 1 : 0];
+        });
+        sorter.sort();
+    }
+
+    const normalize = value => String(value).normalize('NFKC').toLowerCase();
+    const names = new Map();
+    $rows.each(function() { names.set(this, normalize($(this).attr('data-search') || '')); });
+
+    function update(resort, save) {
+        $table.attr('data-primary-region', state.primary);
+        $regions.each(function() {
+            const active = $(this).attr('data-primary') === state.primary;
+            $(this).toggleClass('active', active).toggleClass('inactive', !active)
+                .attr('aria-checked', String(active)).attr('tabindex', active ? '0' : '-1');
+        });
+        $releases.each(function() {
+            const active = state.releases.has($(this).attr('data-toggle').slice(8));
+            $(this).toggleClass('active', active).toggleClass('inactive', !active)
+                .attr('aria-pressed', String(active));
+        });
+        const tokens = normalize(state.query).trim().split(/\s+/).filter(Boolean);
+        $rows.each(function() {
+            const show = (!state.releases.size || state.releases.has($(this).attr('data-release'))) &&
+                tokens.every(token => names.get(this).includes(token));
+            $(this).toggleClass('visible', show).toggleClass('hidden', !show);
+        });
+        $table.addClass('filter-ready');
+        if (resort) sortByRegion();
+        if (save) writeState();
+    }
+
+    $regions.attr('role', 'radio').on('click', function() {
+        const primary = $(this).attr('data-primary');
+        if (state.primary === primary) return;
+        state.primary = primary;
+        update(true, true);
+    }).on('keydown', function(event) {
+        const keys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
+        if (keys.includes(event.key)) {
+            event.preventDefault();
+            const index = event.key === 'Home' ? 0 : event.key === 'End' ? $regions.length - 1 :
+                ($regions.index(this) + (['ArrowLeft', 'ArrowUp'].includes(event.key) ? -1 : 1) + $regions.length) % $regions.length;
+            $regions.eq(index).trigger('focus').trigger('click');
+        } else if (event.key === ' ' || event.key === 'Enter') {
+            event.preventDefault();
+            $(this).trigger('click');
+        }
+    });
+    $releases.attr({role: 'button', tabindex: '0'}).on('click', function() {
+        const value = $(this).attr('data-toggle').slice(8);
+        if (state.releases.has(value)) state.releases.delete(value);
+        else state.releases.add(value);
+        update(false, true);
+    }).on('keydown', function(event) {
+        if (event.key === ' ' || event.key === 'Enter') {
+            event.preventDefault();
+            $(this).trigger('click');
+        }
+    });
+    $search.on('input', function() {
+        state.query = $(this).val();
+        update(false, true);
+    });
+    $(window).on('hashchange.eventtable', function() {
+        readState();
+        $search.val(state.query);
+        update(true, false);
+    });
+
+    readState();
+    $search.val(state.query);
+    update(false, false);
+    mw.loader.using('jquery.tablesorter', function() {
+        if (!$table.data('tablesorter')) $table.tablesorter();
+        sorterReady = true;
+        sortByRegion();
+    });
+}
 
 function initTableFilters() {
     const filter = $("#table-filter");
@@ -514,6 +653,7 @@ function filtersToTextField(filters) {
 /// Release cutoff line
 ///
 $(document).ready(function () {
+    if ($("#table-filter").data('target') === 'eventtable') return;
     const $table = $("#"+filterTarget);
 
     //TODO

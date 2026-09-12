@@ -1,0 +1,13 @@
+=Events Schedule=
+{{EventTableControls}}
+<templatestyles src="EventTable/style.css" />
+<div class="eventtable-scroll">
+{{#invoke:EventTable|render|{{#invoke:BlueBucket|get|events
+|select = Id, Server, PageName, NameEN, NameJP, Promo, StartDate, EndDate, Notes
+|where = (Category = "Event" OR Category = "Collab" OR Category = "PermanentEvent") AND (Server = "JP" OR Server = "GL")
+|order by = StartDate DESC, Id ASC
+|limit = 1000
+|format = json
+|default = []
+}}}}
+</div>
