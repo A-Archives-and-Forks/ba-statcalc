@@ -102,6 +102,7 @@ const search_keywords = {
         '눈': { text: '"fuuka"' }, //'눈_눈': { text: 'fuuka' },
         '囧': { text: '"koyuki"' },
         'sexy': { text: '"seia"' },
+        'wappi': { text: '"sakurako"' },
     },
     'gifttable': {},
     
