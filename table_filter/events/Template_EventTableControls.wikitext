@@ -12,4 +12,6 @@
 --><span class="release-permanent inactive" data-toggle="release-permanent" role="button" aria-pressed="false" tabindex="0">Permanent</span><!--
 --></div></div></includeonly><noinclude>
 Controls for the combined [[Events#Events Schedule|Events schedule]]. New events and JP as the primary region are selected by default. Selecting no release types shows all types, as in the banner filter. JP-only events remain visible when GL is primary, ordered by their JP schedule above announced GL events.
+
+Search matches all regional titles. Put a phrase in double quotes to match it as one filter. Prefix a word or quoted phrase with <code>exclude:</code> to hide matching events, for example <code>exclude:"special operation:"</code>. Multiple filters are combined: every included term must match, and no excluded term may match.
 </noinclude>

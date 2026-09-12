@@ -137,6 +137,7 @@ function initEventTableFilters() {
 
     const $search = $('<input>', {
         type: 'search', id: 'table-search', placeholder: 'Filter event names…',
+        title: 'Use double quotes for a phrase; exclude:word hides matches.',
         'aria-label': 'Filter event names in English or Japanese', autocomplete: 'off'
     });
     $filter.find('.controls-search').empty().append($search);
@@ -166,6 +167,12 @@ function initEventTableFilters() {
         window.history.replaceState(null, '', hashPrefix + params.toString());
     }
 
+    function jumpToScheduleSection() {
+        if (!window.location.hash.startsWith(hashPrefix) || window.location.hash.length <= hashPrefix.length) return;
+        const target = document.getElementById('Events_Schedule') || $filter[0];
+        target.scrollIntoView({block: 'start'});
+    }
+
     function sortByRegion() {
         if (!sorterReady) return;
         const sorter = $table.data('tablesorter');
@@ -180,6 +187,16 @@ function initEventTableFilters() {
     }
 
     const normalize = value => String(value).normalize('NFKC').toLowerCase();
+    function searchTerms(query) {
+        // Whitespace separates filters unless enclosed in quotes.
+        // An unfinished quote keeps the remainder together while the user is typing.
+        const tokens = normalize(query).match(/(?:[^\s"]|"[^"]*(?:"|$))+/g) || [];
+        return tokens.map(token => {
+            const exclude = token.startsWith('exclude:');
+            const value = (exclude ? token.slice(8) : token).replace(/"/g, '');
+            return {value, exclude};
+        }).filter(term => term.value.trim());
+    }
     const names = new Map();
     $rows.each(function() { names.set(this, normalize($(this).attr('data-search') || '')); });
 
@@ -195,10 +212,10 @@ function initEventTableFilters() {
             $(this).toggleClass('active', active).toggleClass('inactive', !active)
                 .attr('aria-pressed', String(active));
         });
-        const tokens = normalize(state.query).trim().split(/\s+/).filter(Boolean);
+        const terms = searchTerms(state.query);
         $rows.each(function() {
             const show = (!state.releases.size || state.releases.has($(this).attr('data-release'))) &&
-                tokens.every(token => names.get(this).includes(token));
+                terms.every(term => names.get(this).includes(term.value) !== term.exclude);
             $(this).toggleClass('visible', show).toggleClass('hidden', !show);
         });
         $table.addClass('filter-ready');
@@ -242,11 +259,13 @@ function initEventTableFilters() {
         readState();
         $search.val(state.query);
         update(true, false);
+        jumpToScheduleSection();
     });
 
     readState();
     $search.val(state.query);
     update(false, false);
+    jumpToScheduleSection();
     mw.loader.using('jquery.tablesorter', function() {
         if (!$table.data('tablesorter')) $table.tablesorter();
         sorterReady = true;
