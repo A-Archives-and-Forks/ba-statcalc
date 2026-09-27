@@ -110,6 +110,44 @@ const search_keywords = {
     
 };
 
+function normalizeSearchText(value) {
+    return String(value).normalize('NFKC').toLowerCase();
+}
+
+function searchSegments(query, legacySeparators = false) {
+    // Quotes keep phrases together, including an unfinished phrase while typing.
+    const segments = normalizeSearchText(query).match(/(?:[^\s"]|"[^"]*(?:"|$))+/g) || [];
+    if (!legacySeparators) return segments;
+    // Preserve the older tables' separators for ordinary filters. Exclusions
+    // are literal words/phrases, so punctuation inside them is searchable.
+    return segments.flatMap(segment => segment.includes('"') || segment.startsWith('exclude:') ?
+        [segment] : segment.split(/[_;,+\-]+/)).filter(Boolean);
+}
+
+function searchTerms(query) {
+    return searchSegments(query).map(token => {
+        const exclude = token.startsWith('exclude:');
+        const value = (exclude ? token.slice(8) : token).replace(/"/g, '');
+        return {value, exclude};
+    }).filter(term => term.value.trim());
+}
+
+function exclusionFilter(segment) {
+    const value = segment.slice(8).replace(/"/g, '');
+    return value.trim() ? {type: 'exclude', src: 'textfield', value} : null;
+}
+
+function exclusionText(value) {
+    return 'exclude:' + (/[\s_]/.test(value) ? '"' + value + '"' : value);
+}
+
+function wholeWordSearchRegex(value) {
+    const escaped = value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const start = /^\w/.test(value) ? '\\b' : '';
+    const end = /\w$/.test(value) ? '\\b' : '';
+    return new RegExp(start + escaped + end, 'i');
+}
+
 
 $(document).ready(function() {
     if ($("#table-filter").data('target') === 'eventtable') {
@@ -118,7 +156,7 @@ $(document).ready(function() {
     }
     initTableFilters();
     updateFiltersUI();
-    lastSearchSegments = $("#table-search").val().toLowerCase().split(/[\s_,;+\-]+/).filter(seg => seg.length >= 2);
+    lastSearchSegments = searchSegments($("#table-search").val(), true);
 });
 
 // Events pair both regions in each row. Region toggle changes css presentation and sorting, so prevent it acting as a row-membership filter.
@@ -186,19 +224,8 @@ function initEventTableFilters() {
         sorter.sort();
     }
 
-    const normalize = value => String(value).normalize('NFKC').toLowerCase();
-    function searchTerms(query) {
-        // Whitespace separates filters unless enclosed in quotes.
-        // An unfinished quote keeps the remainder together while the user is typing.
-        const tokens = normalize(query).match(/(?:[^\s"]|"[^"]*(?:"|$))+/g) || [];
-        return tokens.map(token => {
-            const exclude = token.startsWith('exclude:');
-            const value = (exclude ? token.slice(8) : token).replace(/"/g, '');
-            return {value, exclude};
-        }).filter(term => term.value.trim());
-    }
     const names = new Map();
-    $rows.each(function() { names.set(this, normalize($(this).attr('data-search') || '')); });
+    $rows.each(function() { names.set(this, normalizeSearchText($(this).attr('data-search') || '')); });
 
     function update(resort, save) {
         $table.attr('data-primary-region', state.primary);
@@ -289,6 +316,7 @@ function initTableFilters() {
             type: 'text',
             id: 'table-search',
             placeholder: 'Filter...',
+            title: 'Use double quotes for a phrase; exclude:word hides matches.',
         })
     );
 
@@ -316,9 +344,18 @@ function initTableFilters() {
 
     
     if (window.location.hash.length > 1) {
-        const uri = decodeURIComponent(window.location.hash.substring(1));
-        const segments = new Set(uri.split('_')); //.filter(seg => seg.length >= 2);
+        const uri = normalizeSearchText(decodeURIComponent(window.location.hash.substring(1)));
+        const segments = new Set(uri.match(/(?:[^_"]|"[^"]*(?:"|$))+/g) || []);
         for (let seg of segments) {
+            if (seg.startsWith('exclude:')) {
+                const filter = exclusionFilter(seg);
+                if (filter) initialFilters.push(filter);
+                continue;
+            }
+            if (seg.includes('"')) {
+                initialFilters.push({type: 'text', src: 'textfield', value: seg});
+                continue;
+            }
             seg = seg.replace(/^-+|-+$/g, '');
             if (search_keywords[filterTarget].hasOwnProperty(seg)) {
                 if (search_keywords[filterTarget][seg].hasOwnProperty('text')) {
@@ -394,7 +431,7 @@ function tableFilterToggle(toggleItem) {
 
 
 function tableTextFilter(searchStr) {
-    const segments = searchStr.toLowerCase().split(/[\s_,;+\-]+/); //.filter(seg => seg.length >= 2);
+    const segments = searchSegments(searchStr, true);
     // Only update if segments changed
     if (segments.join('|') === lastSearchSegments.join('|')) {
         //console.log('Offramp: No change in search segments \n' + segments.join('|') + '\n' + lastSearchSegments.join('|'));
@@ -406,7 +443,13 @@ function tableTextFilter(searchStr) {
     tableFilters = tableFilters.filter(f => f.src !== 'textfield');
 
     for (const seg of segments) {
-        if (search_keywords[filterTarget].hasOwnProperty(seg)) {
+        if (seg.startsWith('exclude:')) {
+            const filter = exclusionFilter(seg);
+            if (filter) tableFilters.push(filter);
+        } else if (seg.includes('"')) {
+            const value = seg.replace(/"/g, '');
+            if (value.trim()) tableFilters.push({type: 'text', src: 'textfield', value: '"' + value + '"'});
+        } else if (search_keywords[filterTarget].hasOwnProperty(seg)) {
             //console.log('Keyword match:', seg, search_keywords[filterTarget][seg]);
             if (search_keywords[filterTarget][seg].hasOwnProperty('text')) {
                 //console.log('Adding text filter:', search_keywords[filterTarget][seg].text);
@@ -449,10 +492,11 @@ function tableTextFilter(searchStr) {
 
 
 function handleGiftTableFiltering($table) {
+    const exclusions = tableFilters.filter(f => f.type === 'exclude').map(f => f.value);
     const tokens = tableFilters
         .filter(f => f.type === 'text' || (f.type === 'param' && f.src === 'textfield'))
         .map(f => {
-            let v = String(f.value).toLowerCase().trim();
+            let v = normalizeSearchText(f.value).trim();
             if (v.startsWith('"') && v.endsWith('"')) v = v.slice(1, -1);
             return v;
         })
@@ -466,8 +510,6 @@ function handleGiftTableFiltering($table) {
         }
     }
 
-    const escapeRegExp = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
     $table.find("tr").each(function () {
         if ($(this).closest('thead').length) return;
 
@@ -476,6 +518,13 @@ function handleGiftTableFiltering($table) {
         let rowMatches = false;
 
         $imgs.css('border', '');
+
+        // Any excluded character removes the gift row, even when another
+        // character on that row matches an included name.
+        if ($imgs.toArray().some(img => exclusions.some(term => normalizeSearchText(img.alt).includes(term)))) {
+            $row.css('display', 'none');
+            return;
+        }
 
         // Apply param filters (additive within each group)
         let passesParams = true;
@@ -497,10 +546,10 @@ function handleGiftTableFiltering($table) {
 
         // Whole-word match unlike other table types
         $imgs.each(function () {
-            const alt = String($(this).attr('alt') || '').toLowerCase();
+            const alt = normalizeSearchText($(this).attr('alt') || '');
             for (const t of tokens) {
                 if (!t) continue;
-                const re = new RegExp(`\\b${escapeRegExp(t)}\\b`, 'i');
+                const re = wholeWordSearchRegex(t);
                 if (re.test(alt)) {
                     rowMatches = true;
                     $(this).css('border', '4px solid red');
@@ -538,6 +587,7 @@ function updateFiltersUI() {
         if ($(this).closest('thead').length) return;
         let showRow = true;
         const textSearchCell = $(this).find("td").eq(textSearchCellIndex);
+        const cellText = normalizeSearchText(textSearchCell.text());
 
         // Collect all filters by group
         const filteredGroups = {};
@@ -556,6 +606,8 @@ function updateFiltersUI() {
             }
         }
 
+        if (tableFilters.some(f => f.type === 'exclude' && cellText.includes(f.value))) showRow = false;
+
         // Check text filters
         if (showRow) {
             for (const f of tableFilters) {
@@ -564,12 +616,10 @@ function updateFiltersUI() {
                         showRow = false;
                         break;
                     }
-                    const cellText = textSearchCell.text().toLowerCase();
                     if (f.value.startsWith('"') && f.value.endsWith('"')) {
                         // Whole-word match for quoted text
                         const quoted = f.value.slice(1, -1).toLowerCase();
-                        // Use word boundaries for whole word match
-                        const regex = new RegExp(`\\b${quoted}\\b`, 'i');
+                        const regex = wholeWordSearchRegex(quoted);
                         if (!regex.test(cellText)) {
                             showRow = false;
                             break;
@@ -651,6 +701,7 @@ function affinityCompare(rowVal, op, val) {
 // Utility: convert filter array to URI string
 function filtersToURI(filters) {
     return filters.map(f => {
+        if (f.type === 'exclude') return exclusionText(f.value);
         if (f.type === 'keyword') return f.value;
         if (f.type === 'param') return `${f.group}-${f.value}`;
         if (f.type === 'text') return f.value;
@@ -661,6 +712,7 @@ function filtersToURI(filters) {
 function filtersToTextField(filters) {
     //console.log(filters);
     return filters.filter(f => f.src === 'textfield').map(f => {
+        if (f.type === 'exclude') return exclusionText(f.value);
         if (f.type === 'keyword') return f.value;
         if (f.type === 'param') return `${f.group}:${f.value}`;
         if (f.type === 'text') return f.value;

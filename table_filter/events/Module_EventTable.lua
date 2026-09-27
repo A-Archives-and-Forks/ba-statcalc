@@ -1,6 +1,4 @@
--- Module:EventTable. BlueBucket supplies canonical JSON; this module only
--- combines regions by Id and renders them. BlueBucketGet cannot pivot regions
--- while preserving multiple periods per Id (notably Decagrammaton).
+-- Module:EventTable. BlueBucket supplies canonical JSON; this module only combines regions by Id and renders them. 
 local p = {}
 
 -- Same logic as in Template:EventCard/IdTypes.
@@ -100,19 +98,37 @@ function p.render(frame)
             if not event then
                 event = {id = id, release = releaseType(id), JP = {}, GL = {}}
                 byId[id] = event
-                events[#events + 1] = event
             end
             event[row.Server][#event[row.Server] + 1] = row
         end
     end
-    for _, event in ipairs(events) do
+    for _, event in pairs(byId) do
         table.sort(event.JP, newestFirst)
         table.sort(event.GL, newestFirst)
+        if event.id == 701 then
+            -- All Special Operation: Decagrammaton parts share Id 701.
+            local parts = {}
+            for _, region in ipairs({'JP', 'GL'}) do
+                for _, row in ipairs(event[region]) do
+                    local part = tonumber((row.Notes or ''):lower():match('part%s+(%d+)'))
+                    local key = part or ''
+                    if not parts[key] then
+                        parts[key] = {id = event.id, part = part, release = event.release, JP = {}, GL = {}}
+                        events[#events + 1] = parts[key]
+                    end
+                    local records = parts[key][region]
+                    records[#records + 1] = row
+                end
+            end
+        else
+            events[#events + 1] = event
+        end
     end
     table.sort(events, function(a, b)
         local ad, bd = latest(a, 'JP'), latest(b, 'JP')
         if ad ~= bd then return ad > bd end
-        return a.id < b.id
+        if a.id ~= b.id then return a.id < b.id end
+        return (a.part or 0) < (b.part or 0)
     end)
 
     local html = mw.html.create('table'):attr('id', 'eventtable')
@@ -137,13 +153,14 @@ function p.render(frame)
         local jp, gl = latest(event, 'JP'), latest(event, 'GL')
         local row = body:tag('tr'):attr('data-event-id', event.id):attr('data-release', event.release)
             :attr('data-search', table.concat(names, ' ')):attr('data-releasedate-jp', jp):attr('data-releasedate-gl', gl)
+        if event.part then row:attr('data-event-part', event.part) end
         if event.release == 'rerun' or event.release == 'permanent' then row:addClass('hidden') end
         if gl == '' then row:addClass('event-upcoming-gl') end
         local first = event.JP[1] or event.GL[1]
         local imageCell = row:tag('td'):addClass('event-promo')
         local preview = imageCell:tag('div'):addClass('event-promo-image')
         local originalId = event.release == 'rerun' and event.id - 10000 or event.release == 'permanent' and event.id - 900000
-        local promo = findPromo(event) or (originalId and findPromo(byId[originalId]))
+        local promo = findPromo(event) or findPromo(byId[event.id]) or (originalId and findPromo(byId[originalId]))
         if promo then
             preview:wikitext('[[' .. promo .. '|160px|link=' .. first.PageName .. '|alt=' .. (first.NameEN or first.PageName) .. ']]')
         else
